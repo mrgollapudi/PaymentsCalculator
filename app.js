@@ -48,7 +48,7 @@ function addRound() {
   `).join(' ');
 
   roundDiv.innerHTML = `
-    <h3>Round ${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(${roundId})">Delete</button></h3>
+    <h3>Round ${roundId + 1} <button class="btn btn-sm btn-danger float-end ms-2" onclick="deleteRound(${roundId})">Delete</button><button class="btn btn-sm btn-outline-secondary float-end" onclick="toggleRound(${roundId})">Toggle</button></h3>
     <div class="player-checks mb-2">${checkboxes}</div>
     <table class="table table-bordered">
       <thead class="table-light"><tr><th scope="col">Player</th><th scope="col">Gain/Loss</th></tr></thead>
@@ -117,8 +117,11 @@ function calculateSettlement() {
     if (balance > 0) creditors.push({ name, amount: balance });
   }
 
-  let tableHTML = `
-    <h4 class="text-primary">Settlement Summary</h4>
+  let today = new Date();
+let options = { day: "numeric", month: "long", year: "numeric" };
+let dateStr = today.toLocaleDateString("en-GB", options).replace(/(\d+)(?=\s)/, "$1<sup>th</sup>");
+let tableHTML = `
+    <h4 class="text-primary">Settlement Summary - ${dateStr}</h4>`
     <table class="table table-bordered table-hover">
       <thead class="table-light">
         <tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Amount ($)</th></tr>
@@ -170,3 +173,26 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('DOMContentLoaded', () => {
   addRound();
 });
+
+function resetApp() {
+  if (!confirm('Are you sure you want to reset the app? This will remove all rounds and players.')) return;
+  rounds = [];
+  players.clear();
+  document.getElementById('playerListInput').value = '';
+  const display = document.getElementById('playerListDisplay');
+  if (display) display.textContent = '';
+  document.getElementById('rounds').innerHTML = '';
+  document.getElementById('results').innerHTML = '';
+  addRound();
+}
+
+function toggleRound(roundId) {
+  const roundBox = document.getElementById(`round-${roundId}`);
+  if (!roundBox) return;
+  const table = roundBox.querySelector('table');
+  const checkboxes = roundBox.querySelector('.player-checks');
+  const errorBox = roundBox.querySelector('.error');
+  if (table) table.classList.toggle('d-none');
+  if (checkboxes) checkboxes.classList.toggle('d-none');
+  if (errorBox) errorBox.classList.toggle('d-none');
+}
