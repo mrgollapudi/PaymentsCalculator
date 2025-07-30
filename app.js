@@ -117,10 +117,9 @@ function calculateSettlement() {
     if (balance > 0) creditors.push({ name, amount: balance });
   }
 
-  let today = new Date();
+let today = new Date();
 let options = { day: "numeric", month: "long", year: "numeric" };
 let dateStr = today.toLocaleDateString("en-GB", options).replace(/(\d+)(?=\s)/, "$1<sup>th</sup>");
-let today = new Date();
 let options = { day: "numeric", month: "long", year: "numeric" };
 let dateStr = today.toLocaleDateString("en-GB", options);
 let tableHTML = `
