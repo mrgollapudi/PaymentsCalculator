@@ -11,6 +11,27 @@ function addPlayerToList() {
   const names = input.value.split(',').map(name => capitalizeName(name.trim())).filter(Boolean);
   names.forEach(name => players.add(name));
   input.value = '';
+  displayPlayerList();
+  refreshAllRoundCheckboxes();
+}
+
+function displayPlayerList() {
+  const display = document.getElementById('playerListDisplay');
+  const list = Array.from(players);
+  display.textContent = list.length ? 'Players: ' + list.join(', ') : '';
+}
+
+function refreshAllRoundCheckboxes() {
+  rounds.forEach((_, roundId) => {
+    const roundDiv = document.getElementById(`round-${roundId}`);
+    if (!roundDiv) return;
+    const checkBoxContainer = roundDiv.querySelector('.player-checks');
+    const existingSelected = Array.from(document.querySelectorAll(`#entries-${roundId} tr td:first-child`)).map(td => td.textContent);
+    checkBoxContainer.innerHTML = Array.from(players).map(player => {
+      const checked = existingSelected.includes(player) ? 'checked' : '';
+      return `<label><input type="checkbox" value="${player}" onchange="addCheckedPlayer(${roundId}, this)" ${checked}> ${player}</label>`;
+    }).join(' ');
+  });
 }
 
 function addRound() {
@@ -21,17 +42,17 @@ function addRound() {
   roundDiv.id = `round-${roundId}`;
 
   const checkboxes = Array.from(players).map(player => `
-    <label><input type="checkbox" value="\${player}" onchange="addCheckedPlayer(\${roundId}, this)"> \${player}</label>
+    <label><input type="checkbox" value="${player}" onchange="addCheckedPlayer(${roundId}, this)"> ${player}</label>
   `).join(' ');
 
   roundDiv.innerHTML = `
-    <h3>Round \${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(\${roundId})">Delete</button></h3>
-    <div class="player-checks mb-2">\${checkboxes}</div>
+    <h3>Round ${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(${roundId})">Delete</button></h3>
+    <div class="player-checks mb-2">${checkboxes}</div>
     <table class="table table-bordered">
-      <thead><tr><th>Player</th><th>Gain/Loss</th></tr></thead>
-      <tbody id="entries-\${roundId}"></tbody>
+      <thead class="table-light"><tr><th scope="col">Player</th><th scope="col">Gain/Loss</th></tr></thead>
+      <tbody id="entries-${roundId}"></tbody>
     </table>
-    <div class="error" id="error-\${roundId}"></div>
+    <div class="error" id="error-${roundId}"></div>
   `;
   document.getElementById('rounds').appendChild(roundDiv);
 }
@@ -46,13 +67,15 @@ function addCheckedPlayer(roundId, checkbox) {
   const playerName = checkbox.value;
 
   if (checkbox.checked) {
-    const row = document.createElement('tr');
-    row.id = `row-${roundId}-${playerName}`;
-    row.innerHTML = `
-      <td>\${playerName}</td>
-      <td><input type="number" class="form-control" placeholder="Gain/Loss" /></td>
-    `;
-    tbody.appendChild(row);
+    if (!document.getElementById(`row-${roundId}-${playerName}`)) {
+      const row = document.createElement('tr');
+      row.id = `row-${roundId}-${playerName}`;
+      row.innerHTML = `
+        <td>${playerName}</td>
+        <td><input type="number" class="form-control" placeholder="Gain/Loss" /></td>
+      `;
+      tbody.appendChild(row);
+    }
   } else {
     const row = document.getElementById(`row-${roundId}-${playerName}`);
     if (row) row.remove();
@@ -77,7 +100,7 @@ function calculateSettlement() {
     });
     const errorEl = document.getElementById(`error-${roundId}`);
     if (roundTotal !== 0) {
-      errorEl.textContent = `Round \${roundId + 1} is unbalanced (Total: \${roundTotal}).`;
+      errorEl.textContent = `Round ${roundId + 1} is unbalanced (Total: ${roundTotal}).`;
       hasError = true;
     } else {
       errorEl.textContent = '';
@@ -95,7 +118,9 @@ function calculateSettlement() {
   let tableHTML = `
     <h4 class="text-primary">Settlement Summary</h4>
     <table class="table table-bordered table-hover">
-      <thead class="table-light"><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Amount ($)</th></tr></thead>
+      <thead class="table-light">
+        <tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Amount ($)</th></tr>
+      </thead>
       <tbody>
   `;
   let textResult = '';
@@ -105,8 +130,8 @@ function calculateSettlement() {
     const creditor = creditors[0];
     const settleAmount = Math.min(debtor.amount, creditor.amount);
 
-    tableHTML += `<tr><td>\${debtor.name}</td><td>\${creditor.name}</td><td>\${settleAmount.toFixed(2)}</td></tr>`;
-    textResult += `\${debtor.name} pays \${creditor.name} $\${settleAmount.toFixed(2)}\n`;
+    tableHTML += `<tr><td>${debtor.name}</td><td>${creditor.name}</td><td>${settleAmount.toFixed(2)}</td></tr>`;
+    textResult += `${debtor.name} pays ${creditor.name} $${settleAmount.toFixed(2)}\n`;
 
     debtor.amount -= settleAmount;
     creditor.amount -= settleAmount;
@@ -139,3 +164,7 @@ if ('serviceWorker' in navigator) {
     .then(() => console.log('Service Worker Registered'))
     .catch(err => console.error('SW registration failed:', err));
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  addRound();
+});
