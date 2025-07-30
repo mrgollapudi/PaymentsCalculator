@@ -8,6 +8,8 @@ function capitalizeName(name) {
 
 function addPlayerToList() {
   const input = document.getElementById('playerListInput');
+  const display = document.getElementById('playerListDisplay');
+  if (!display) return;
   const names = input.value.split(',').map(name => capitalizeName(name.trim())).filter(Boolean);
   names.forEach(name => players.add(name));
   input.value = '';
