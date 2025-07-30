@@ -120,8 +120,6 @@ function calculateSettlement() {
 let today = new Date();
 let options = { day: "numeric", month: "long", year: "numeric" };
 let dateStr = today.toLocaleDateString("en-GB", options).replace(/(\d+)(?=\s)/, "$1<sup>th</sup>");
-let options = { day: "numeric", month: "long", year: "numeric" };
-let dateStr = today.toLocaleDateString("en-GB", options);
 let tableHTML = `
     <h4 class="text-primary">Settlement Summary - ${dateStr}</h4>`;
     <table class="table table-bordered table-hover">
