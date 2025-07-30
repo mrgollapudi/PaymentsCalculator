@@ -1,0 +1,131 @@
+
+let rounds = [];
+let players = new Set();
+
+function capitalizeName(name) {
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+function addPlayerToList() {
+  const input = document.getElementById('playerListInput');
+  const names = input.value.split(',').map(name => capitalizeName(name.trim())).filter(Boolean);
+  names.forEach(name => players.add(name));
+  input.value = '';
+}
+
+function addRound() {
+  const roundId = rounds.length;
+  rounds.push([]);
+  const roundDiv = document.createElement('div');
+  roundDiv.className = 'round';
+  roundDiv.id = `round-${roundId}`;
+
+  const checkboxes = Array.from(players).map(player => `
+    <label><input type="checkbox" value="${player}" onchange="addCheckedPlayer(${roundId}, this)"> ${player}</label>
+  `).join(' ');
+
+  roundDiv.innerHTML = `
+    <h3>Round ${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(${roundId})">Delete</button></h3>
+    <div class="player-checks mb-2">${checkboxes}</div>
+    <table class="table table-bordered">
+      <thead><tr><th>Player</th><th>Gain/Loss</th></tr></thead>
+      <tbody id="entries-${roundId}"></tbody>
+    </table>
+    <div class="error" id="error-${roundId}"></div>
+  `;
+  document.getElementById('rounds').appendChild(roundDiv);
+}
+
+function deleteRound(roundId) {
+  document.getElementById(`round-${roundId}`).remove();
+  rounds[roundId] = null;
+}
+
+function addCheckedPlayer(roundId, checkbox) {
+  const tbody = document.getElementById(`entries-${roundId}`);
+  const playerName = checkbox.value;
+
+  if (checkbox.checked) {
+    const row = document.createElement('tr');
+    row.id = `row-${roundId}-${playerName}`;
+    row.innerHTML = `
+      <td>${playerName}</td>
+      <td><input type="number" class="form-control" placeholder="Gain/Loss" /></td>
+    `;
+    tbody.appendChild(row);
+  } else {
+    const row = document.getElementById(`row-${roundId}-${playerName}`);
+    if (row) row.remove();
+  }
+}
+
+function calculateSettlement() {
+  document.getElementById('results').innerHTML = '';
+  const balances = {};
+  let hasError = false;
+
+  rounds.forEach((round, roundId) => {
+    if (!round) return;
+    const entries = document.querySelectorAll(`#entries-${roundId} tr`);
+    let roundTotal = 0;
+    entries.forEach(entry => {
+      const name = entry.querySelector('td').textContent.trim();
+      const amount = parseFloat(entry.querySelector('input').value);
+      if (!name || isNaN(amount)) return;
+      roundTotal += amount;
+      balances[name] = (balances[name] || 0) + amount;
+    });
+    const errorEl = document.getElementById(`error-${roundId}`);
+    if (roundTotal !== 0) {
+      errorEl.textContent = `Round ${roundId + 1} is unbalanced (Total: ${roundTotal}).`;
+      hasError = true;
+    } else {
+      errorEl.textContent = '';
+    }
+  });
+
+  if (hasError) return;
+
+  const debtors = [], creditors = [];
+  for (const [name, balance] of Object.entries(balances)) {
+    if (balance < 0) debtors.push({ name, amount: -balance });
+    if (balance > 0) creditors.push({ name, amount: balance });
+  }
+
+  let tableHTML = '<table class="table table-bordered"><thead><tr><th>From</th><th>To</th><th>Amount ($)</th></tr></thead><tbody>';
+  let textResult = '';
+
+  while (debtors.length && creditors.length) {
+    const debtor = debtors[0];
+    const creditor = creditors[0];
+    const settleAmount = Math.min(debtor.amount, creditor.amount);
+
+    tableHTML += `<tr><td>${debtor.name}</td><td>${creditor.name}</td><td>${settleAmount.toFixed(2)}</td></tr>`;
+    textResult += `${debtor.name} pays ${creditor.name} $${settleAmount.toFixed(2)}\n`;
+
+    debtor.amount -= settleAmount;
+    creditor.amount -= settleAmount;
+
+    if (debtor.amount === 0) debtors.shift();
+    if (creditor.amount === 0) creditors.shift();
+  }
+
+  tableHTML += '</tbody></table>';
+  document.getElementById('results').innerHTML = textResult ? tableHTML : 'No debts to settle!';
+  window.lastResult = textResult;
+}
+
+function downloadResults() {
+  if (!window.lastResult) return alert('Please calculate results first.');
+  const blob = new Blob([window.lastResult], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'settlements.txt';
+  a.click();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('Service Worker Registered'))
+    .catch(err => console.error('SW registration failed:', err));
+}
