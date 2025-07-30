@@ -1,4 +1,4 @@
-
+   
 const CACHE_NAME = 'payment-calculator-cache-v1';
 const urlsToCache = [
   '/',
