@@ -21,17 +21,17 @@ function addRound() {
   roundDiv.id = `round-${roundId}`;
 
   const checkboxes = Array.from(players).map(player => `
-    <label><input type="checkbox" value="${player}" onchange="addCheckedPlayer(${roundId}, this)"> ${player}</label>
+    <label><input type="checkbox" value="\${player}" onchange="addCheckedPlayer(\${roundId}, this)"> \${player}</label>
   `).join(' ');
 
   roundDiv.innerHTML = `
-    <h3>Round ${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(${roundId})">Delete</button></h3>
-    <div class="player-checks mb-2">${checkboxes}</div>
+    <h3>Round \${roundId + 1} <button class="btn btn-sm btn-danger float-end" onclick="deleteRound(\${roundId})">Delete</button></h3>
+    <div class="player-checks mb-2">\${checkboxes}</div>
     <table class="table table-bordered">
       <thead><tr><th>Player</th><th>Gain/Loss</th></tr></thead>
-      <tbody id="entries-${roundId}"></tbody>
+      <tbody id="entries-\${roundId}"></tbody>
     </table>
-    <div class="error" id="error-${roundId}"></div>
+    <div class="error" id="error-\${roundId}"></div>
   `;
   document.getElementById('rounds').appendChild(roundDiv);
 }
@@ -49,7 +49,7 @@ function addCheckedPlayer(roundId, checkbox) {
     const row = document.createElement('tr');
     row.id = `row-${roundId}-${playerName}`;
     row.innerHTML = `
-      <td>${playerName}</td>
+      <td>\${playerName}</td>
       <td><input type="number" class="form-control" placeholder="Gain/Loss" /></td>
     `;
     tbody.appendChild(row);
@@ -77,7 +77,7 @@ function calculateSettlement() {
     });
     const errorEl = document.getElementById(`error-${roundId}`);
     if (roundTotal !== 0) {
-      errorEl.textContent = `Round ${roundId + 1} is unbalanced (Total: ${roundTotal}).`;
+      errorEl.textContent = `Round \${roundId + 1} is unbalanced (Total: \${roundTotal}).`;
       hasError = true;
     } else {
       errorEl.textContent = '';
@@ -92,7 +92,12 @@ function calculateSettlement() {
     if (balance > 0) creditors.push({ name, amount: balance });
   }
 
-  let tableHTML = '<table class="table table-bordered"><thead><tr><th>From</th><th>To</th><th>Amount ($)</th></tr></thead><tbody>';
+  let tableHTML = `
+    <h4 class="text-primary">Settlement Summary</h4>
+    <table class="table table-bordered table-hover">
+      <thead class="table-light"><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Amount ($)</th></tr></thead>
+      <tbody>
+  `;
   let textResult = '';
 
   while (debtors.length && creditors.length) {
@@ -100,8 +105,8 @@ function calculateSettlement() {
     const creditor = creditors[0];
     const settleAmount = Math.min(debtor.amount, creditor.amount);
 
-    tableHTML += `<tr><td>${debtor.name}</td><td>${creditor.name}</td><td>${settleAmount.toFixed(2)}</td></tr>`;
-    textResult += `${debtor.name} pays ${creditor.name} $${settleAmount.toFixed(2)}\n`;
+    tableHTML += `<tr><td>\${debtor.name}</td><td>\${creditor.name}</td><td>\${settleAmount.toFixed(2)}</td></tr>`;
+    textResult += `\${debtor.name} pays \${creditor.name} $\${settleAmount.toFixed(2)}\n`;
 
     debtor.amount -= settleAmount;
     creditor.amount -= settleAmount;
@@ -116,12 +121,17 @@ function calculateSettlement() {
 }
 
 function downloadResults() {
-  if (!window.lastResult) return alert('Please calculate results first.');
-  const blob = new Blob([window.lastResult], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'settlements.txt';
-  a.click();
+  const resultEl = document.getElementById('results');
+  if (!resultEl || !resultEl.innerHTML.trim()) {
+    alert('Please calculate results first.');
+    return;
+  }
+  html2canvas(resultEl).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'settlements.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
 }
 
 if ('serviceWorker' in navigator) {
