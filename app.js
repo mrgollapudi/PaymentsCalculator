@@ -75,7 +75,7 @@ function addCheckedPlayer(roundId, checkbox) {
       row.id = `row-${roundId}-${playerName}`;
       row.innerHTML = `
         <td>${playerName}</td>
-        <td><input type="number" class="form-control" placeholder="Gain/Loss" /></td>
+        <td><input type="text" class="form-control" inputmode="numeric" pattern="[-]?[0-9]*" placeholder="Gain/Loss" /></td>
       `;
       tbody.appendChild(row);
     }
