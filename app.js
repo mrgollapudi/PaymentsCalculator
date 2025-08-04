@@ -137,7 +137,11 @@ function calculateSettlement() {
       let roundTotal = 0;
       entries.forEach(entry => {
          const name = entry.querySelector('td').textContent.trim();
-         const amount = parseFloat(entry.querySelector('input').value);
+         const inputs = entry.querySelectorAll('input');
+         let amount = Math.abs(parseFloat(inputs[2]?.value || 0));
+         const type = inputs[0]?.checked ? 'gain' : 'loss';
+         if (type === 'loss') amount = -amount;
+
          if (!name || isNaN(amount)) return;
          roundTotal += amount;
          balances[name] = (balances[name] || 0) + amount;
@@ -240,4 +244,4 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('DOMContentLoaded', () => {
    addRound();
 });
-// Updated 12am 4th Aug
+// Updated 12am 4th Aug 12:11pm
